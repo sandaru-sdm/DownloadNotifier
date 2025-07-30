@@ -49,8 +49,6 @@ Ensure you have **Python 3.x** installed on your system. You can download the la
     cd DownloadNotifier
     ```
 
-    (Ensure you replace `sandaru-sdm` with your actual GitHub username if you forked the repository).
-
     Alternatively, you can download the project as a ZIP file from GitHub and extract it to a folder on your computer.
 
 2.  **Install Required Python Libraries:** Navigate into your `DownloadNotifier` project folder (e.g., `cd C:\Users\YourUser\Downloads\DownloadNotifier`) in your terminal and run the following commands:
@@ -160,54 +158,6 @@ Once the application window appears:
 9.  **About Section:**
 
     * Click the **"About" link** at the bottom of the window to view application version and credit information.
-
----
-
-## 📦 Creating the Executable (For Developers/Distribution)
-
-If you want to distribute your application as a single executable file that doesn't require Python installation, you can use **PyInstaller**.
-
-1.  **Install PyInstaller:**
-
-    ```bash
-    pip install pyinstaller
-    ```
-
-2.  **Navigate to Your Project Directory:** Open your terminal and go to your `DownloadNotifier` project folder.
-
-3.  **Run PyInstaller Command:** Use the following command, ensuring you specify your alarm sound file correctly:
-
-    If your alarm file is `alarm.wav`:
-
-    ```bash
-    pyinstaller --onefile --windowed --add-data "alarm.wav;." --icon "app_icon.ico" download_notifier.py
-    ```
-
-    If your alarm file is `alarm.mp3`:
-
-    ```bash
-    pyinstaller --onefile --windowed --add-data "alarm.mp3;." --icon "app_icon.ico" download_notifier.py
-    ```
-
-    * `--onefile`: Bundles everything into a single `.exe` file.
-
-    * `--windowed`: Prevents a console window from appearing.
-
-    * `--add-data "alarm.wav;."`: Includes your `alarm.wav` (or `alarm.mp3`) file in the executable.
-
-    * `--icon "app_icon.ico"`: (Optional) If you have a custom `.ico` file (e.g., `app_icon.ico`) for your application's icon, place it in your project folder and specify its name here. Otherwise, PyInstaller uses a default icon.
-
-4.  **Find Your Executable:** After PyInstaller finishes, your `download_notifier.exe` will be located in the newly created `dist` folder:
-
-    ```
-    DownloadNotifier/
-    ├── build/             # Intermediate build files
-    ├── dist/              # Contains your executable!
-    │   └── download_notifier.exe
-    ├── download_notifier.py
-    ├── alarm.wav          # Your alarm sound file
-    └── download_notifier.spec # PyInstaller specification file
-    ```
 
 ---
 
