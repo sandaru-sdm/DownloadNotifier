@@ -6,8 +6,6 @@ import threading
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import pygame # Used for playing alarm sounds
-import pystray # For system tray functionality
-from PIL import Image, ImageDraw # For creating tray icon
 import json
 import requests
 from urllib.parse import urlparse
@@ -483,8 +481,6 @@ class DownloadNotifierApp:
         self.event_handler = None
         self.is_monitoring = False
         
-        self.tray_icon = None # For pystray icon
-
         # Initialize Pygame mixer here as well, in case it wasn't done in __main__
         if not pygame.mixer.get_init():
             try:
@@ -496,9 +492,9 @@ class DownloadNotifierApp:
         self._apply_theme(LIGHT_THEME) # Always apply light theme
         self._center_window() # Center the window after widgets are created and theme applied
 
-        # Set up window close protocol to minimize to tray
-        self.master.protocol("WM_DELETE_WINDOW", self._minimize_to_tray)
-        self._setup_tray_icon() # Setup tray icon immediately
+        # --- MODIFICATION: CHANGE THE WINDOW CLOSE PROTOCOL ---
+        # Now, clicking 'X' will call on_closing, which stops monitoring and quits the app.
+        self.master.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def _center_window(self):
         """Centers the Tkinter window on the screen."""
@@ -669,7 +665,6 @@ class DownloadNotifierApp:
                     widget.config(bg=theme_colors["browse_button_bg"], fg=theme_colors["browse_button_fg"])
                 elif widget == self.stop_alarm_button:
                     widget.config(bg=theme_colors["stop_alarm_button_bg"], fg=theme_colors["stop_alarm_button_fg"])
-                # No theme_toggle_button to configure
             elif isinstance(widget, tk.Label):
                 # Apply foreground based on label type
                 if widget == self.about_link_label:
@@ -679,8 +674,6 @@ class DownloadNotifierApp:
                     widget.config(bg=theme_colors["bg"], fg=theme_colors["fg"])
             elif isinstance(widget, tk.Frame):
                 widget.config(bg=theme_colors["bg"])
-
-    # Removed _toggle_theme method
 
     def _browse_directory(self):
         """Opens a directory selection dialog."""
@@ -859,58 +852,8 @@ class DownloadNotifierApp:
         """Resets about link appearance on mouse leave (light theme only)."""
         self.about_link_label.config(fg=LIGHT_THEME["about_link_fg"], font=self.footer_font)
 
-    def _create_tray_icon_image(self):
-        """Creates a simple square icon image for the system tray."""
-        width = 64
-        height = 64
-        image = Image.new('RGBA', (width, height), (0, 0, 0, 0)) # Transparent background
-        draw = ImageDraw.Draw(image)
-        draw.ellipse((0, 0, width, height), fill='green') # A green circle
-        return image
-
-    def _setup_tray_icon(self):
-        """Sets up the system tray icon and its menu."""
-        icon_image = self._create_tray_icon_image()
-
-        menu = (
-            pystray.MenuItem('Show Window', self._show_window_from_tray),
-            pystray.MenuItem('Exit', self._exit_application)
-        )
-
-        self.tray_icon = pystray.Icon("Download Notifier", icon_image, "Download Notifier", menu)
-
-        # Run the icon in a separate thread to avoid blocking Tkinter's main loop
-        threading.Thread(target=self.tray_icon.run, daemon=True).start()
-
-    def _show_window_from_tray(self, icon, item):
-        """Restores the main window from the system tray."""
-        self.master.deiconify() # Show the window
-        self.master.state('normal') # Restore it to normal state (not minimized)
-        self.master.lift() # Bring to front
-        self.master.focus_force() # Give focus
-        # It's important to stop the icon thread when the window is shown,
-        # otherwise, it might prevent clean exit later or cause issues.
-        # The icon will be re-run if the window is minimized again.
-        if self.tray_icon and self.tray_icon._thread.is_alive():
-            self.tray_icon.stop()
-
-    def _minimize_to_tray(self):
-        """Hides the main window and moves the application to the system tray."""
-        self.master.withdraw() # Hide the window
-        # Ensure the tray icon is running when minimizing
-        if self.tray_icon and not self.tray_icon._thread.is_alive():
-             threading.Thread(target=self.tray_icon.run, daemon=True).start()
-
-    def _exit_application(self, icon, item):
-        """Exits the application completely from the system tray."""
-        icon.stop() # Stop the tray icon
-        self.master.quit() # Quit the Tkinter main loop
-
     def on_closing(self):
         """Handles graceful shutdown when the window is closed."""
-        # This method is now primarily for full exit, but WM_DELETE_WINDOW
-        # is redirected to _minimize_to_tray by default.
-        # This path is taken if _exit_application is called.
         if self.is_monitoring:
             self.stop_monitoring()
         # Ensure any playing music is stopped before quitting mixer
@@ -918,7 +861,11 @@ class DownloadNotifierApp:
             pygame.mixer.music.stop()
         if pygame.mixer.get_init():
             pygame.mixer.quit()
-        pygame.quit() # Quit pygame modules
+        # If pygame was initialized, it's good practice to quit all modules
+        # However, pygame.mixer.quit() is often sufficient for most use cases
+        # and pygame.quit() can sometimes cause issues if other modules were
+        # not explicitly initialized. Let's stick to the mixer for now as that's all we use.
+        # pygame.quit()
         self.master.destroy()
 
 # --- Main Execution ---
@@ -930,6 +877,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Could not initialize Pygame mixer: {e}. Ensure necessary audio drivers are installed.")
         # Exit if mixer cannot be initialized, as sound won't work
+        # This is a critical failure, so a hard exit is appropriate.
         exit()
 
     # Create a dummy alarm sound file if it doesn't exist for testing
