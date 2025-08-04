@@ -39,7 +39,7 @@ Ensure you have **Python 3.x** installed on your system. You can download the la
     If you're using Git, clone the repository:
 
     ```bash
-    git clone [https://github.com/sandaru-sdm/DownloadNotifier.git](https://github.com/sandaru-sdm/DownloadNotifier.git)
+    git clone https://github.com/sandaru-sdm/DownloadNotifier.git
     cd DownloadNotifier
     ```
 
@@ -74,8 +74,6 @@ The application needs an alarm sound file to play when a download finishes.
     ```bash
     cd path\to\your\DownloadNotifier
     ```
-
-    (e.g., `C:\Users\maduh\Downloads\DownloadNotifier`).
 
 2.  **Execute the Script:** Run the Python script:
 
